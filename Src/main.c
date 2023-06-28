@@ -17,17 +17,29 @@
  ******************************************************************************
  */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "CAN_receive.h"
 #include "bsp_can.h"
 #include "can.h"
 #include "dma.h"
-#include "gpio.h"
-#include "pid.h"
 #include "tim.h"
+#include "pid.h"
 #include "usart.h"
+#include "gpio.h"
+#include "stdio.h"
+
+
+#ifdef __GNUC__									//串口重定向
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif 
+PUTCHAR_PROTOTYPE
+{
+    HAL_UART_Transmit(&huart1 , (uint8_t *)&ch, 1, 0xFFFF);
+    return ch;
+}
 
 #define IR_IN1 HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_9) // 开启pwm信号输入捕获口为PE9,定时器T1_CH1
 #define IR_IN2 HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6) // 开启pwm信号输入捕获口为PC6,定时器T8_CH1
@@ -61,24 +73,26 @@ const fp32 PID[3] = { 3, 0.1, 0.1 }; // P,I,D参数
 
 void SystemClock_Config(void);
 
+
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
-{
-    HAL_Init();
-    SystemClock_Config();
+{ 
+  HAL_Init();
+  SystemClock_Config();
 
-    MX_GPIO_Init();
-    MX_DMA_Init();
-    MX_TIM1_Init();
-    MX_USART3_UART_Init();
-    MX_CAN1_Init();
-    MX_CAN2_Init();
-    MX_TIM8_Init();
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_TIM1_Init();
+  MX_USART3_UART_Init();
+  MX_CAN1_Init();
+  MX_CAN2_Init();
+  MX_TIM8_Init();
+  MX_USART1_UART_Init();
 
-    can_filter_init();
+		can_filter_init();
     HAL_UART_Receive_DMA(&huart3, sbus_rx_buffer, 18);
     PID_init(&motor_pid_1, PID_POSITION, PID, 16000, 2000); // PID结构体，PID计算模式，PID参数，最大值，最大I值
     PID_init(&motor_pid_2, PID_POSITION, PID, 16000, 2000); // PID结构体，PID计算模式，PID参数，最大值，最大I值
@@ -88,8 +102,9 @@ int main(void)
     HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);             // 使能定时器1的通道1输入捕获功能，并使能相应的中断
     HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);             // 使能定时器1的通道1输入捕获功能，并使能相应的中断
 
-    while (1) {
-        HAL_TIM_IC_CaptureCallback(&htim1); // 循环调用输入捕获函数，捕获定时器通道pwm信号值
+  while (1)
+  {
+				HAL_TIM_IC_CaptureCallback(&htim1); // 循环调用输入捕获函数，捕获定时器通道pwm信号值
         HAL_TIM_IC_CaptureCallback(&htim8);
 
         pulse_width_1 = (float)time_dowm_num_1 - (float)time_up_num_1; // 计算定时器1通道1的PWM脉宽值
@@ -122,44 +137,53 @@ int main(void)
         CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);      // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
 
         HAL_Delay(2);
-    }
+  }
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLM = 6;
-    RCC_OscInitStruct.PLL.PLLN = 168;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ = 7;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        Error_Handler();
-    }
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 6;
+  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-        | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
-        Error_Handler();
-    }
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
+
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) // 捕获中断回调函数，每次捕获到信号就会进入到这个函数
 {
@@ -210,6 +234,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) // 捕获中断回调函数，每
     }
 }
 
+
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
 {
     RC_Ctl.rc.ch0 = (sbus_rx_buffer[0] | (sbus_rx_buffer[1] << 8)) & 0x07ff;
@@ -227,25 +253,27 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
     RC_Ctl.key.v = sbus_rx_buffer[14] | (sbus_rx_buffer[15] << 8);   //!< KeyBoard value
 }
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
+  __disable_irq();
+  while (1)
+  {
+  }
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t* file, uint32_t line)
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t *file, uint32_t line)
 {
+
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

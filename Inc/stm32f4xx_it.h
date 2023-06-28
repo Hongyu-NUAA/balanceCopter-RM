@@ -57,6 +57,7 @@ void SysTick_Handler(void);
 void DMA1_Stream1_IRQHandler(void);
 void CAN1_RX0_IRQHandler(void);
 void TIM1_TRG_COM_TIM11_IRQHandler(void);
+void USART1_IRQHandler(void);
 void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void CAN2_RX0_IRQHandler(void);
 /* USER CODE BEGIN EFP */
@@ -68,5 +69,3 @@ void CAN2_RX0_IRQHandler(void);
 #endif
 
 #endif /* __STM32F4xx_IT_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
