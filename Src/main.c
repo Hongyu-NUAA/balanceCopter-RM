@@ -19,40 +19,60 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "CAN_receive.h"
-#include "bsp_can.h"
 #include "can.h"
 #include "dma.h"
 #include "gpio.h"
-#include "pid.h"
-#include "stdio.h"
-#include "tim.h"
 #include "usart.h"
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+#include "CAN_receive.h"
+#include "bsp_can.h"
+#include "pid.h"
+#include "bsp_uart.h"
 
-#ifdef __GNUC__ // ´®¿ÚÖØ¶¨Ïò
-    #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-    #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE* f)
-#endif
-PUTCHAR_PROTOTYPE
-{
-    HAL_UART_Transmit(&huart1, (uint8_t*)&ch, 1, 0xFFFF);
-    return ch;
-}
+/* USER CODE END Includes */
 
-RC_Ctl_t RC_Ctl;                     // ÉùÃ÷Ò£¿ØÆ÷Êı¾İ½á¹¹Ìå
-uint8_t sbus_rx_buffer[18];          // ÉùÃ÷Ò£¿ØÆ÷»º´æÊı×é
-pid_type_def motor_pid_1;            // ÉùÃ÷PIDÊı¾İ½á¹¹Ìå
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+RC_Ctl_t RC_Ctl;                     // å£°æ˜é¥æ§å™¨æ•°æ®ç»“æ„ä½“
+uint8_t sbus_rx_buffer[18];          // å£°æ˜é¥æ§å™¨ç¼“å­˜æ•°ç»„
+pid_type_def motor_pid_1;            // å£°æ˜PIDæ•°æ®ç»“æ„ä½“
 pid_type_def motor_pid_2;
-const motor_measure_t* motor_data_1; // ÉùÃ÷µç»ú½á¹¹ÌåÖ¸Õë
+const motor_measure_t* motor_data_1; // å£°æ˜ç”µæœºç»“æ„ä½“æŒ‡é’ˆ
 const motor_measure_t* motor_data_2;
 
-int set_speed_1 = 0; // Ä¿±êËÙ¶È
+int set_speed_1 = 0; // ç›®æ ‡é€Ÿåº¦
 int set_speed_2 = 0;
 
-const fp32 PID[3] = { 3, 0.1, 0.1 }; // P,I,D²ÎÊı
+const fp32 PID[3] = { 3, 0.1, 0.1 }; // P,I,Då‚æ•°
+/* USER CODE END PD */
 
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
 
 /**
  * @brief  The application entry point.
@@ -60,37 +80,62 @@ void SystemClock_Config(void);
  */
 int main(void)
 {
+    /* USER CODE BEGIN 1 */
+
+    /* USER CODE END 1 */
+
+    /* MCU Configuration--------------------------------------------------------*/
+
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
+
+    /* USER CODE BEGIN Init */
+
+    /* USER CODE END Init */
+
+    /* Configure the system clock */
     SystemClock_Config();
 
+    /* USER CODE BEGIN SysInit */
+
+    /* USER CODE END SysInit */
+
+    /* Initialize all configured peripherals */
     MX_GPIO_Init();
     MX_DMA_Init();
-    MX_TIM1_Init();
     MX_USART3_UART_Init();
     MX_CAN1_Init();
     MX_CAN2_Init();
-    MX_TIM8_Init();
     MX_USART1_UART_Init();
+    /* USER CODE BEGIN 2 */
 
     can_filter_init();
     HAL_UART_Receive_DMA(&huart3, sbus_rx_buffer, 18);
-    PID_init(&motor_pid_1, PID_POSITION, PID, 16000, 2000); // PID½á¹¹Ìå£¬PID¼ÆËãÄ£Ê½£¬PID²ÎÊı£¬×î´óÖµ£¬×î´óIÖµ
-    PID_init(&motor_pid_2, PID_POSITION, PID, 16000, 2000); // PID½á¹¹Ìå£¬PID¼ÆËãÄ£Ê½£¬PID²ÎÊı£¬×î´óÖµ£¬×î´óIÖµ
-    motor_data_1 = get_chassis_motor_measure_point(0);      // »ñÈ¡IDÎª1ºÅµÄµç»úÊı¾İÖ¸Õë
-    motor_data_2 = get_chassis_motor_measure_point(1);      // »ñÈ¡IDÎª2ºÅµÄµç»úÊı¾İÖ¸Õë
+    PID_init(&motor_pid_1, PID_POSITION, PID, 16000, 2000); // PIDç»“æ„ä½“ï¼ŒPIDè®¡ç®—æ¨¡å¼ï¼ŒPIDå‚æ•°ï¼Œæœ€å¤§å€¼ï¼Œæœ€å¤§Iå€¼
+    PID_init(&motor_pid_2, PID_POSITION, PID, 16000, 2000); // PIDç»“æ„ä½“ï¼ŒPIDè®¡ç®—æ¨¡å¼ï¼ŒPIDå‚æ•°ï¼Œæœ€å¤§å€¼ï¼Œæœ€å¤§Iå€¼
+    motor_data_1 = get_chassis_motor_measure_point(0);      // è·å–IDä¸º1å·çš„ç”µæœºæ•°æ®æŒ‡é’ˆ
+    motor_data_2 = get_chassis_motor_measure_point(1);      // è·å–IDä¸º2å·çš„ç”µæœºæ•°æ®æŒ‡é’ˆ
 
+    bsp_uart1_init();
+    
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
     while (1) {
+        /* USER CODE END WHILE */
 
-        // set_speed_1 = pulse_width_1 * 50; // ËÙ¶È·¶Î§Îª-25000~25000
-        // set_speed_2 = pulse_width_2 * 50;
+        /* USER CODE BEGIN 3 */
+        bsp_uart1_update();
 
-        PID_calc(&motor_pid_1, motor_data_1->speed_rpm, set_speed_1); // ¼ÆËãµç»úpidÊä³ö£¬PID½á¹¹Ìå£¬Êµ¼ÊËÙ¶È£¬Éè¶¨ËÙ¶È
-        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, set_speed_2); // ¼ÆËãµç»úpidÊä³ö£¬PID½á¹¹Ìå£¬Êµ¼ÊËÙ¶È£¬Éè¶¨ËÙ¶È
+        PID_calc(&motor_pid_1, motor_data_1->speed_rpm, set_speed_1); // è®¡ç®—ç”µæœºpidè¾“å‡ºï¼ŒPIDç»“æ„ä½“ï¼Œå®é™…é€Ÿåº¦ï¼Œè®¾å®šé€Ÿåº¦
+        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, set_speed_2); // è®¡ç®—ç”µæœºpidè¾“å‡ºï¼ŒPIDç»“æ„ä½“ï¼Œå®é™…é€Ÿåº¦ï¼Œè®¾å®šé€Ÿåº¦
 
-        CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);      // ·¢ËÍ¼ÆËãºóµÄ¿ØÖÆµçÁ÷¸øµç»ú1ºÍµç»ú2£¬µç»ú3ºÍ4ÔÚÕâÀïÎª0
+        CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);      // å‘é€è®¡ç®—åçš„æ§åˆ¶ç”µæµç»™ç”µæœº1å’Œç”µæœº2ï¼Œç”µæœº3å’Œ4åœ¨è¿™é‡Œä¸º0
 
         HAL_Delay(2);
     }
+    /* USER CODE END 3 */
 }
 
 /**
@@ -122,6 +167,8 @@ void SystemClock_Config(void)
         Error_Handler();
     }
 
+    /** Initializes the CPU, AHB and APB buses clocks
+     */
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
         | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -133,6 +180,9 @@ void SystemClock_Config(void)
         Error_Handler();
     }
 }
+
+/* USER CODE BEGIN 4 */
+
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
 {
@@ -150,15 +200,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
     RC_Ctl.mouse.press_r = sbus_rx_buffer[13];                       //!< Mouse Right Is Press
     RC_Ctl.key.v = sbus_rx_buffer[14] | (sbus_rx_buffer[15] << 8);   //!< KeyBoard value
 }
+/* USER CODE END 4 */
+
 /**
  * @brief  This function is executed in case of error occurrence.
  * @retval None
  */
 void Error_Handler(void)
 {
+    /* USER CODE BEGIN Error_Handler_Debug */
+    /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1) {
     }
+    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef USE_FULL_ASSERT
@@ -171,5 +226,9 @@ void Error_Handler(void)
  */
 void assert_failed(uint8_t* file, uint32_t line)
 {
+    /* USER CODE BEGIN 6 */
+    /* User can add his own implementation to report the file name and line number,
+       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
