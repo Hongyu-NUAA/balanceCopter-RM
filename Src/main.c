@@ -27,8 +27,9 @@
 /* USER CODE BEGIN Includes */
 #include "CAN_receive.h"
 #include "bsp_can.h"
-#include "pid.h"
 #include "bsp_uart.h"
+#include "pid.h"
+
 
 /* USER CODE END Includes */
 
@@ -39,15 +40,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-RC_Ctl_t RC_Ctl;                     // 声明遥控器数据结构体
-uint8_t sbus_rx_buffer[18];          // 声明遥控器缓存数组
+// RC_Ctl_t RC_Ctl;                     // 声明遥控器数据结构体
+// uint8_t sbus_rx_buffer[18];          // 声明遥控器缓存数组
 pid_type_def motor_pid_1;            // 声明PID数据结构体
 pid_type_def motor_pid_2;
 const motor_measure_t* motor_data_1; // 声明电机结构体指针
 const motor_measure_t* motor_data_2;
 
-int set_speed_1 = 0; // 目标速度
-int set_speed_2 = 0;
+// int set_speed_1 = 0; // 目标速度
+// int set_speed_2 = 0;
 
 const fp32 PID[3] = { 3, 0.1, 0.1 }; // P,I,D参数
 /* USER CODE END PD */
@@ -103,21 +104,21 @@ int main(void)
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
     MX_DMA_Init();
-    MX_USART3_UART_Init();
+    // MX_USART3_UART_Init();
     MX_CAN1_Init();
     MX_CAN2_Init();
     MX_USART1_UART_Init();
     /* USER CODE BEGIN 2 */
 
     can_filter_init();
-    HAL_UART_Receive_DMA(&huart3, sbus_rx_buffer, 18);
+    // HAL_UART_Receive_DMA(&huart3, sbus_rx_buffer, 18);
     PID_init(&motor_pid_1, PID_POSITION, PID, 16000, 2000); // PID结构体，PID计算模式，PID参数，最大值，最大I值
     PID_init(&motor_pid_2, PID_POSITION, PID, 16000, 2000); // PID结构体，PID计算模式，PID参数，最大值，最大I值
     motor_data_1 = get_chassis_motor_measure_point(0);      // 获取ID为1号的电机数据指针
     motor_data_2 = get_chassis_motor_measure_point(1);      // 获取ID为2号的电机数据指针
 
     bsp_uart1_init();
-    
+		
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -128,8 +129,8 @@ int main(void)
         /* USER CODE BEGIN 3 */
         bsp_uart1_update();
 
-        PID_calc(&motor_pid_1, motor_data_1->speed_rpm, set_speed_1); // 计算电机pid输出，PID结构体，实际速度，设定速度
-        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, set_speed_2); // 计算电机pid输出，PID结构体，实际速度，设定速度
+        PID_calc(&motor_pid_1, motor_data_1->speed_rpm, motor_target_f[0]); // 计算电机pid输出，PID结构体，实际速度，设定速度
+        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, motor_target_f[1]); // 计算电机pid输出，PID结构体，实际速度，设定速度
 
         CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);      // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
 
@@ -183,23 +184,22 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+// void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
+// {
+//     RC_Ctl.rc.ch0 = (sbus_rx_buffer[0] | (sbus_rx_buffer[1] << 8)) & 0x07ff;
+//     RC_Ctl.rc.ch1 = ((sbus_rx_buffer[1] >> 3) | (sbus_rx_buffer[2] << 5)) & 0x07ff;
+//     RC_Ctl.rc.ch2 = ((sbus_rx_buffer[2] >> 6) | (sbus_rx_buffer[3] << 2) | (sbus_rx_buffer[4] << 10)) & 0x07ff;
+//     RC_Ctl.rc.ch3 = ((sbus_rx_buffer[4] >> 1) | (sbus_rx_buffer[5] << 7)) & 0x07ff;
+//     RC_Ctl.rc.s1 = ((sbus_rx_buffer[5] >> 4) & 0x000C) >> 2;
+//     RC_Ctl.rc.s2 = ((sbus_rx_buffer[5] >> 4) & 0x0003);
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef* UartHandle)
-{
-    RC_Ctl.rc.ch0 = (sbus_rx_buffer[0] | (sbus_rx_buffer[1] << 8)) & 0x07ff;
-    RC_Ctl.rc.ch1 = ((sbus_rx_buffer[1] >> 3) | (sbus_rx_buffer[2] << 5)) & 0x07ff;
-    RC_Ctl.rc.ch2 = ((sbus_rx_buffer[2] >> 6) | (sbus_rx_buffer[3] << 2) | (sbus_rx_buffer[4] << 10)) & 0x07ff;
-    RC_Ctl.rc.ch3 = ((sbus_rx_buffer[4] >> 1) | (sbus_rx_buffer[5] << 7)) & 0x07ff;
-    RC_Ctl.rc.s1 = ((sbus_rx_buffer[5] >> 4) & 0x000C) >> 2;
-    RC_Ctl.rc.s2 = ((sbus_rx_buffer[5] >> 4) & 0x0003);
-
-    RC_Ctl.mouse.x = sbus_rx_buffer[6] | (sbus_rx_buffer[7] << 8);   //!< Mouse X axis
-    RC_Ctl.mouse.y = sbus_rx_buffer[8] | (sbus_rx_buffer[9] << 8);   //!< Mouse Y axis
-    RC_Ctl.mouse.z = sbus_rx_buffer[10] | (sbus_rx_buffer[11] << 8); //!< Mouse Z axis
-    RC_Ctl.mouse.press_l = sbus_rx_buffer[12];                       //!< Mouse Left Is Press
-    RC_Ctl.mouse.press_r = sbus_rx_buffer[13];                       //!< Mouse Right Is Press
-    RC_Ctl.key.v = sbus_rx_buffer[14] | (sbus_rx_buffer[15] << 8);   //!< KeyBoard value
-}
+//     RC_Ctl.mouse.x = sbus_rx_buffer[6] | (sbus_rx_buffer[7] << 8);   //!< Mouse X axis
+//     RC_Ctl.mouse.y = sbus_rx_buffer[8] | (sbus_rx_buffer[9] << 8);   //!< Mouse Y axis
+//     RC_Ctl.mouse.z = sbus_rx_buffer[10] | (sbus_rx_buffer[11] << 8); //!< Mouse Z axis
+//     RC_Ctl.mouse.press_l = sbus_rx_buffer[12];                       //!< Mouse Left Is Press
+//     RC_Ctl.mouse.press_r = sbus_rx_buffer[13];                       //!< Mouse Right Is Press
+//     RC_Ctl.key.v = sbus_rx_buffer[14] | (sbus_rx_buffer[15] << 8);   //!< KeyBoard value
+// }
 /* USER CODE END 4 */
 
 /**
