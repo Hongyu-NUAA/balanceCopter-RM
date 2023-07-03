@@ -3,7 +3,8 @@
 #include "stdio.h"
 #include "string.h"
 
-uint16_t rmuart_pwm[4];
+float motor_target_f[BALANCEBOT_MOTOR_NUM];
+float servo_target_f[BALANCEBOT_SERVO_NUM];
 
 uint8_t UART1_RX_BUF[RM_UART_MAX_LEN]; // 缓存数组
 uint8_t UART1_RX_LEN;                  // 缓存数组长度
@@ -52,8 +53,14 @@ void bsp_uart1_update()
         return;
     }
 
-    rmuart_pwm[0] = rmuart.rmuart_s.motor[0];
-    rmuart_pwm[1] = rmuart.rmuart_s.motor[1];
-    rmuart_pwm[2] = rmuart.rmuart_s.motor[2];
-    rmuart_pwm[3] = rmuart.rmuart_s.motor[3];
+    uint8_t i = 0;
+
+    // 电机格式化到[-1~1], 然后乘最大电机转速, 得到实际目标转速
+    for (i = 0; i < BALANCEBOT_MOTOR_NUM; i++) {
+        motor_target_f[i] = (float)(rmuart.rmuart_s.motor[i] - 1000) / 1000.0f * MOTOR_MAX_SPEED;
+    }
+
+    // for (i = 0; i < BALANCEBOT_SERVO_NUM; i++) {
+    //     motor_target_f[i] = (float)(rmuart.rmuart_s.servo[i] - 1000) / 1000.0f;
+    // }
 }
