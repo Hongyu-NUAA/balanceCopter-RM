@@ -30,7 +30,6 @@
 #include "bsp_uart.h"
 #include "pid.h"
 
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +46,8 @@ pid_type_def motor_pid_2;
 const motor_measure_t* motor_data_1; // 声明电机结构体指针
 const motor_measure_t* motor_data_2;
 
+int32_t last_time = 0;
+int32_t cur_time = 0;
 // int set_speed_1 = 0; // 目标速度
 // int set_speed_2 = 0;
 
@@ -118,7 +119,7 @@ int main(void)
     motor_data_2 = get_chassis_motor_measure_point(1);      // 获取ID为2号的电机数据指针
 
     bsp_uart1_init();
-		
+
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -127,12 +128,21 @@ int main(void)
         /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */
-        bsp_uart1_update();
+        bsp_uart1_set_wheel_speed(motor_data_1->speed_rpm, motor_data_2->speed_rpm);
+
+        cur_time = HAL_GetTick();
+        if ((cur_time - last_time) > 100) {
+            bsp_uart1_tx();
+
+            last_time = cur_time;
+        }
+
+        bsp_uart1_rx();
 
         PID_calc(&motor_pid_1, motor_data_1->speed_rpm, motor_target_f[0]); // 计算电机pid输出，PID结构体，实际速度，设定速度
         PID_calc(&motor_pid_2, motor_data_2->speed_rpm, motor_target_f[1]); // 计算电机pid输出，PID结构体，实际速度，设定速度
 
-        CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);      // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
+        CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);            // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
 
         HAL_Delay(2);
     }
