@@ -11,6 +11,11 @@
 #define BALANCEBOT_MOTOR_NUM 2
 #define BALANCEBOT_SERVO_NUM 2
 
+main
+#define MOTOR_MAX_SPEED 20000                 // 此处为最大的电机转速
+
+
+main
 extern uint8_t UART1_RX_BUF[RM_UART_MAX_LEN]; // 缓存数组
 extern uint8_t UART1_RX_LEN;                  // 缓存数组长度
 

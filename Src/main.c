@@ -140,7 +140,7 @@ int main(void)
         bsp_uart1_rx();
 
         PID_calc(&motor_pid_1, motor_data_1->speed_rpm, motor_target_f[0]); // 计算电机pid输出，PID结构体，实际速度，设定速度
-        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, motor_target_f[1]); // 计算电机pid输出，PID结构体，实际速度，设定速度
+        PID_calc(&motor_pid_2, motor_data_2->speed_rpm, -motor_target_f[1]); // 计算电机pid输出，PID结构体，实际速度，设定速度
 
         CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);            // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
 
