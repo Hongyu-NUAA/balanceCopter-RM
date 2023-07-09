@@ -43,15 +43,15 @@
 // uint8_t sbus_rx_buffer[18];          // 声明遥控器缓存数组
 pid_type_def motor_pid_1;            // 声明PID数据结构体
 pid_type_def motor_pid_2;
-const motor_measure_t* motor_data_1; // 声明电机结构体指针
-const motor_measure_t* motor_data_2;
+const motor_measure_t *motor_data_1; // 声明电机结构体指针
+const motor_measure_t *motor_data_2;
 
 int32_t last_time = 0;
 int32_t cur_time = 0;
 // int set_speed_1 = 0; // 目标速度
 // int set_speed_2 = 0;
 
-const fp32 PID[3] = { 3, 0.1, 0.1 }; // P,I,D参数
+const fp32 PID[3] = { 12, 0.01, 0.001 }; // P,I,D参数
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -131,7 +131,7 @@ int main(void)
         bsp_uart1_set_wheel_speed(motor_data_1->speed_rpm, motor_data_2->speed_rpm);
 
         cur_time = HAL_GetTick();
-        if ((cur_time - last_time) > 100) {
+        if ((cur_time - last_time) > 10) {
             bsp_uart1_tx();
 
             last_time = cur_time;
@@ -139,6 +139,40 @@ int main(void)
 
         bsp_uart1_rx();
 
+//				for (int32_t time=0; time < time_std; time++) {
+//					switch (flag) {
+//						case (0):
+//							set_speed = 0;
+//							motor_target_f[0] = set_speed;
+//							if (time == 1999) {
+//								time = 0;
+//								flag = 1;
+//							}
+//							break;
+//						case (1):
+//							set_speed = 5000;
+//							motor_target_f[0] = set_speed;
+//							if (time == 1999) {
+//								time = 0;
+//								flag = 2;
+//							}
+//							break;
+//						case (2):
+//							set_speed = 10000;
+//							motor_target_f[0] = set_speed;
+//							if (time == 1999) {
+//								time = 0;
+//								flag = 0;
+//							}
+//							break;
+//					}
+
+//					PID_calc(&motor_pid_1, motor_data_1->speed_rpm, motor_target_f[0]); // 计算电机pid输出，PID结构体，实际速度，设定速度
+//					CAN_cmd_chassis(motor_pid_1.out, motor_pid_2.out, 0, 0);            // 发送计算后的控制电流给电机1和电机2，电机3和4在这里为0
+//					HAL_Delay(1);
+//				}
+//				motor_target_f[0] = 5000;
+//  PID_calc(&motor_pid_1, motor_data_1->speed_rpm, set_speed); 
         PID_calc(&motor_pid_1, motor_data_1->speed_rpm, motor_target_f[0]); // 计算电机pid输出，PID结构体，实际速度，设定速度
         PID_calc(&motor_pid_2, motor_data_2->speed_rpm, -motor_target_f[1]); // 计算电机pid输出，PID结构体，实际速度，设定速度
 
